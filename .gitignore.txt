@@ -1,0 +1,18 @@
+# Vivado temporary/build files
+*.jou
+*.log
+*.cache/
+*.runs/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.webtalk/
+*.xpr
+*.xgui
+*.dcp
+*.str
+*.xml
+*.bin
+*.bgn
+build/
+vivado_project/
