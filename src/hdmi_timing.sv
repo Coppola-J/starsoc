@@ -13,7 +13,7 @@ module hdmi_timing(
     output [9:0] x,y,            // Current pixel
     output hsync, vsync,         // New line, frame
     output video_on,             // Indicate when in visible area
-    output p_clock             // Sync game logic to display 
+    output p_clock               // Sync game logic to display 
 );
 
     // Parameters based on VGA standards for 640x480 @60hz display
@@ -89,7 +89,7 @@ module hdmi_timing(
     //assign hsync_next = (h_count >= ((h_max-1) - h_sync_zone)) && h_count < h_max);
     assign hsync_next = (h_count >= ((h_max-1) - h_sync_zone) && h_count <= h_max-1);
     assign vsync_next = (v_count >= ((v_max-1) - v_sync_zone) && v_count <= v_max-1);
-    assign video_on = (h_count >= h_fp && h_count < (h_max - h_sync_zone) && (v_count >= v_fp) && (v_count < (v_max - v_sync_zone)));
+    assign video_on = (h_count >= h_fp && h_count < (h_max - (h_sync_zone + h_bp)) && (v_count >= v_fp) && (v_count < (v_max - (v_sync_zone + v_bp))));
 
     assign x = h_count;
     assign y = v_count;
