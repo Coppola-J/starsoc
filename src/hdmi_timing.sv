@@ -7,6 +7,8 @@
 // ----------------------------------------
 // ----------------------------------------
 
+import starsoc_params::*;
+
 module hdmi_timing(
     input clk,
     input reset,
@@ -15,21 +17,6 @@ module hdmi_timing(
     output video_on,             // Indicate when in visible area
     output p_clock               // Sync game logic to display 
 );
-
-    // Parameters based on VGA standards for 640x480 @60hz display
-    // Horizontal Parameters
-    parameter h_max = 800;
-    parameter h_visible = 640;
-    parameter h_fp = 16;
-    parameter h_sync_zone = 96;
-    parameter h_bp = 48;
-
-    // Vertical Parameters
-    parameter v_max = 525;
-    parameter v_visible = 480;
-    parameter v_fp = 10;
-    parameter v_sync_zone = 2;
-    parameter v_bp = 33;
 
     // New clock generation
     reg [1:0] p_clock_reg;
@@ -73,10 +60,10 @@ module hdmi_timing(
         if (reset) begin                                     // If reset is high
             h_count_next = 0;
             v_count_next = 0;
-        end else if (h_count < h_max-1) begin                  // If h is within bounds
+        end else if (h_count < h_max) begin                  // If h is within bounds
             h_count_next = h_count_next + 1;
         end else begin                                       // If h is out of bounds
-            if (v_count_next < v_max-1) begin                  // If h is out of bounds and v is in bounds
+            if (v_count_next < v_max) begin                  // If h is out of bounds and v is in bounds
                 h_count_next = 0;
                 v_count_next = v_count_next + 1;
             end else begin                                   // if h and v are out of bounds
@@ -87,9 +74,9 @@ module hdmi_timing(
     end 
 
     //assign hsync_next = (h_count >= ((h_max-1) - h_sync_zone)) && h_count < h_max);
-    assign hsync_next = (h_count >= ((h_max-1) - h_sync_zone) && h_count <= h_max-1);
-    assign vsync_next = (v_count >= ((v_max-1) - v_sync_zone) && v_count <= v_max-1);
-    assign video_on = (h_count >= h_fp && h_count < (h_max - (h_sync_zone + h_bp)) && (v_count >= v_fp) && (v_count < (v_max - (v_sync_zone + v_bp))));
+    assign hsync_next = (h_count >= ((h_max) - h_sync_zone) && h_count <= h_max);
+    assign vsync_next = (v_count >= ((v_max) - v_sync_zone) && v_count <= v_max);
+    assign video_on = (h_count >= h_fp && h_count <= (h_max - (h_sync_zone + h_bp)) && (v_count >= v_fp) && (v_count <= (v_max - (v_sync_zone + v_bp))));
 
     assign x = h_count;
     assign y = v_count;

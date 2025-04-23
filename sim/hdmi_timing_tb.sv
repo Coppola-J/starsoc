@@ -7,6 +7,7 @@
 // ----------------------------------------
 // ----------------------------------------
 
+import starsoc_params::*;
 `timescale 1ns/1ps
 
 module hdmi_timing_tb;
@@ -47,7 +48,7 @@ initial begin
     reset_tb = 0;
 
     // Simulate a few thousand cycles (~1 frame at 640x480 @ 60Hz)
-    repeat (50000) begin
+    repeat (500000) begin
         @(posedge p_clock_tb); // Wait for clock edge
         $display("%4t | %3d %3d   %b     %b       %b        %b", 
                  $time, x_tb, y_tb, hsync_tb, vsync_tb, video_on_tb, p_clock_tb);
