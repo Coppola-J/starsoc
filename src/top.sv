@@ -7,5 +7,13 @@
 // ----------------------------------------
 // ----------------------------------------
 
-module top(
+module top (
+    input clk,
+    input left_button,
+    input right_button,
+    input shoot_button,
+    output x,
+    output y
 );
+
+endmodule
