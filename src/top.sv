@@ -12,16 +12,11 @@ module top (
     input  logic reset,
     output logic hsync,
     output logic vsync,
-    output logic [11:0] rgb_top_out
+    output logic [11:0] rgb_top_out,
+    output logic [9:0] pixel_x, pixel_y,             // Using for tb only as of right now
+    output video_on,                                 // Indicate when in visible area
+    output logic p_clock
 );
-
-    // Interconnect signals from hdmi_timing
-    logic [9:0] pixel_x, pixel_y;
-    logic video_on;
-    logic p_tick;
-
-    // Interconnect signals from video_gen
-    logic [11:0] rgb_top;
 
     hdmi_timing hdmi_timing (
         .clk(clk),
@@ -31,7 +26,7 @@ module top (
         .hsync(hsync),
         .vsync(vsync),
         .video_on(video_on),
-        .p_clock(p_tick)
+        .p_clock(p_clock)
     );
 
     video_gen video_gen (
@@ -42,9 +37,8 @@ module top (
     .hsync(hsync),
     .vsync(vsync),
     .video_on(video_on),
-    .p_clock(p_tick),
-    .rgb_out(rgb_gen_out)
+    .p_clock(p_clock),
+    .rgb_out(rgb_top_out)
     );
-
 
 endmodule

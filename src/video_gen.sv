@@ -15,8 +15,8 @@ module video_gen(
     input [9:0] x,y,            // Current pixel
     input hsync, vsync,         // New line, frame
     input video_on,             // Indicate when in visible area
-    input p_clock,             // Sync game logic to display 
-    output [11:0] rgb_out      // Current pixel color
+    input p_clock,              // Sync game logic to display 
+    output [11:0] rgb_out       // Current pixel color
 );
 
 reg [11:0] rbg_reg;
@@ -29,8 +29,10 @@ always@ (posedge p_clock, posedge reset)
 
             if (((x >= visible_origin_x - 10) && (x < visible_origin_x + 10)) && 
                 ((y >= visible_origin_y - 20) && (y < visible_origin_y + 20))) begin
-                rbg_reg = COLOR_CYAN;
-            end
+                    rbg_reg = COLOR_CYAN;
+                end else begin
+                    rbg_reg = COLOR_BLACK;
+                end
 
         end 
     end 

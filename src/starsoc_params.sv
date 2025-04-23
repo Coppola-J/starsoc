@@ -9,9 +9,9 @@
 
 package starsoc_params;
 
-    // --------------------------------------------------
+    // -----------------------------------------------------------
     // Parameters based on VGA standards for 640x480 @60hz display
-    // --------------------------------------------------
+    // -----------------------------------------------------------
 
     // Horizontal parameters
     parameter h_visible = 640;
@@ -28,13 +28,13 @@ package starsoc_params;
     parameter v_max = (v_visible + v_fp + v_sync_zone + v_bp)-1;
 
     // Useful visible parameters
-    parameter int visible_origin_x = ((h_visible/2) + h_fp)-1;
-    parameter int visible_origin_y = ((v_visible/2) + v_fp)-1;
+    parameter int visible_origin_x = ((h_visible/2) + h_fp)-1; //335
+    parameter int visible_origin_y = ((v_visible/2) + v_fp)-1; //249
 
 
-    // --------------------------------------------------
+    // ----------------------------------------
     // Color constants (4-bit R/G/B → 12-bit RGB)
-    // --------------------------------------------------
+    // ----------------------------------------
     parameter logic [11:0] COLOR_BLACK = 12'h000;
     parameter logic [11:0] COLOR_WHITE = 12'hFFF;
     parameter logic [11:0] COLOR_RED   = 12'hF00;
