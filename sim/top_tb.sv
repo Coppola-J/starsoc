@@ -6,39 +6,49 @@
 // 04/22/2025
 // ----------------------------------------
 // ----------------------------------------
-
 import starsoc_params::*;
 `timescale 1ns/1ps
 
 module top_tb;
 
-    logic clk_tb;
-    logic p_clock_tb;
-    logic reset_tb;
-    logic video_on_tb;
-    logic hsync_tb, vsync_tb;          // New line, frame
-    logic [9:0] x_tb, y_tb;
-    logic [11:0] rgb_tb;
+    logic           clk_tb;
+    logic           pixel_clk_tb;
+    logic           reset_tb;
+    logic           video_on_tb;
+    logic           hsync_tb, vsync_tb;
+    logic [9:0]     x_tb, y_tb;
+    logic [11:0]    rgb_tb;
+    int             error_count = 0;
+    logic           last_pixel_clk;
+    int             pixel_clk_toggle_count = 0;
+    logic [23:0]    tdata_tb;
+    logic           tvalid_tb, tuser_tb, tlast_tb, tready_tb;
 
 // Instantiate top for tb
 top dut (
-    .clk(clk_tb),
+    .clk_100mhz(clk_tb),
     .reset(reset_tb),           
-    .hsync(hsync_tb), 
-    .vsync(vsync_tb),
-    .rgb_top_out(rgb_tb),
-    .pixel_x(x_tb),
-    .pixel_y(y_tb),
-    .p_clock(p_clock_tb),
-    .video_on(video_on_tb)
+    .hsync_tb(hsync_tb), 
+    .vsync_tb(vsync_tb),
+    .rgb_out_tb(rgb_tb),
+    .pixel_x_tb(x_tb),
+    .pixel_y_tb(y_tb),
+    .pixel_clk_tb(pixel_clk_tb),
+    .video_on_tb(video_on_tb)
 );
 
-    // Used as error tally for end of sim
-    int error_count = 0;
+    // AXI stream assignments
+    assign tdata_tb  = dut.tdata;
+    assign tvalid_tb = dut.tvalid;
+    assign tuser_tb  = dut.tuser;
+    assign tlast_tb  = dut.tlast;
+    assign tready_tb = dut.tready;
+
 
     // Clock generator (10ns period (wait 5ns then toggle) = 100 MHz)
     initial clk_tb = 0;
     always #5 clk_tb = ~clk_tb;
+
 
 initial begin
     $display("Starting TOP simulation...");
@@ -50,8 +60,8 @@ initial begin
     reset_tb = 0;
 
     // Simulate a few thousand cycles (~1 frame at 640x480 @ 60Hz)
-    repeat (230000) begin
-        @(posedge p_clock_tb); // Wait for clock edge
+    repeat (50000) begin
+        @(posedge pixel_clk_tb); // Wait for clock edge
         $display("%4t | %3d %3d   %b         %b       %b", 
                  $time, x_tb, y_tb, hsync_tb, vsync_tb, rgb_tb);
     end
@@ -63,11 +73,26 @@ initial begin
     $finish;
 end
 
+// Track pixel clock toggles to ensure clk_wiz is generating a signal
+always @(posedge clk_tb) begin
+    if (pixel_clk_tb !== last_pixel_clk) begin
+        pixel_clk_toggle_count++;
+        last_pixel_clk = pixel_clk_tb;
+    end
+end
+
+// Ensure pixel clock toggled at least twice during the simulation
+final begin
+    assert (pixel_clk_toggle_count > 2) else begin
+        $fatal(1, "pixel_clk_tb did not toggle enough times during simulation.");
+        error_count++;
+    end
+end
 
 // SVAS
-always @(posedge p_clock_tb) begin
+always @(posedge pixel_clk_tb) begin
 
-    // Make sure pixel x and coordinate never exceed 799 and 524 respectively
+    // Ensure x_tb and y_tb stay within horizontal and vertical timing bounds
     assert(x_tb <= 799) else begin 
         $error("x_tb exceeded 799 with a value of %0d at time %0t", x_tb, $time);
         error_count++;
@@ -103,6 +128,30 @@ always @(posedge p_clock_tb) begin
             error_count++;
         end
     end 
+
+    // Check that tuser (start of frame) only asserts at the top-left pixel (0,0)
+    assert (!(tuser_tb && (x_tb != h_fp || y_tb != v_fp))) else begin
+        $fatal(1, "tuser asserted at x=%0d, y=%0d instead of (0,0) at %0t", x_tb, y_tb, $time);
+        error_count++;
+    end
+
+    // Check that tlast (end of line) only asserts at the last pixel of a row (x == 639)
+    assert (!(tlast_tb && x_tb != (h_fp + h_visible-1))) else begin
+        $fatal(1, "tlast asserted at x=%0d instead of 639 at %0t", x_tb, $time);
+        error_count++;
+    end
+
+    // Ensure tvalid is not asserted without tready (detect streaming stalls)
+    assert (!(tvalid_tb && !tready_tb)) else begin
+        $fatal(1, "tvalid high but tready not asserted (stall) at %0t", $time);
+        error_count++;
+    end
+
+    // Ensure RGB is never unknown (X) during visible display area
+    assert (!(video_on_tb && (rgb_tb === 12'bx))) else begin
+        $fatal(1, "RGB output is undefined (X) during visible area at %0t", $time);
+        error_count++;
+    end
 
 end
 
