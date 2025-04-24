@@ -18,6 +18,8 @@ module hdmi_timing
     output  logic [9:0]   pixel_y,             // Current pixel pixel_y
     output  logic         hsync,               // New line
     output  logic         vsync,               // New frame
+    output  logic         hblank,              // Blank line
+    output  logic         vblank,              // Blank frame
     output  logic         video_on             // Indicate when in visible area
 );
 
@@ -71,5 +73,8 @@ module hdmi_timing
     assign pixel_y = v_count;
     assign hsync = hsync_reg;
     assign vsync = vsync_reg;
+
+    assign hblank = (h_count < h_fp || h_count >= (h_fp + h_visible));
+    assign vblank = (v_count < v_fp || v_count >= (v_fp + v_visible));
 
 endmodule
