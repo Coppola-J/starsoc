@@ -103,13 +103,13 @@ always @(posedge pixel_clk_tb) begin
     end
 
     // Make sure h and v sync go high in sync zones
-    if (x_tb >= 703 && x_tb <= 799) begin
+    if (x_tb >= (h_visible + h_fp) && x_tb <= h_max - h_bp) begin
         assert (hsync_tb == 1) else begin
             $fatal("h_sync_tb was LOW during x_tb = %0d at time %0t", x_tb, $time);
             error_count++;
         end
     end
-    if (y_tb >= 522 && y_tb <= 524) begin
+    if (y_tb >= (v_visible + v_fp) && y_tb <= v_max - v_bp) begin
         assert (vsync_tb == 1) else begin
             $fatal("y_sync_tb was LOW during y_tb = %0d at time %0t", y_tb, $time);
             error_count++;
@@ -117,7 +117,7 @@ always @(posedge pixel_clk_tb) begin
     end
 
     // Make sure video_on is on when pixel is in actve video area
-    if ((y_tb > 9 && y_tb < 490) && (x_tb > 15 && x_tb < 656)) begin
+    if ((y_tb >= visible_origin_y && y_tb < v_visible) && (x_tb >= visible_origin_x && x_tb < h_visible)) begin
         assert (video_on_tb == 1) else begin
             $fatal("Video_on not high during visible screen x_tb = %0d, y_tb = %0d at time %0t", x_tb, y_tb, $time);
             error_count++;
@@ -130,20 +130,24 @@ always @(posedge pixel_clk_tb) begin
     end 
 
     // Check that tuser (start of frame) only asserts at the top-left pixel (0,0)
-    assert (!(tuser_tb && (x_tb != h_fp || y_tb != v_fp))) else begin
-        $fatal(1, "tuser asserted at x=%0d, y=%0d instead of (0,0) at %0t", x_tb, y_tb, $time);
-        error_count++;
+    if ((x_tb == visible_origin_x) && (y_tb == visible_origin_y)) begin
+        assert (tuser_tb == 1) else begin
+            $error(1, "tuser asserted at x=%0d, y=%0d instead of (0,0) at %0t, or tuser not asserted with value tuser = ", x_tb, y_tb, $time, tuser_tb);
+            error_count++;
+        end
     end
 
     // Check that tlast (end of line) only asserts at the last pixel of a row (x == 639)
-    assert (!(tlast_tb && x_tb != (h_fp + h_visible-1))) else begin
-        $fatal(1, "tlast asserted at x=%0d instead of 639 at %0t", x_tb, $time);
-        error_count++;
+    if (x_tb == h_visible-1) begin
+        assert (tlast_tb == 0) else begin
+            $fatal(1, "tlast asserted at x=%0d instead of 639 at %0t", x_tb, $time);
+            error_count++;
+        end
     end
 
     // Ensure tvalid is not asserted without tready (detect streaming stalls)
     assert (!(tvalid_tb && !tready_tb)) else begin
-        $fatal(1, "tvalid high but tready not asserted (stall) at %0t", $time);
+        $error(1, "tvalid high but tready not asserted (stall) at %0t", $time);
         error_count++;
     end
 

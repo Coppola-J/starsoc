@@ -13,7 +13,7 @@ module top
     input  logic    clk_100mhz,
     input  logic    reset,
 
-    // HDMI output to external pins (ADV7511 HDMI TX)
+    // HDMI output
     output logic        vid_io_out_0_active_video,
     output logic [23:0] vid_io_out_0_data,
     output logic        vid_io_out_0_field,
@@ -34,14 +34,17 @@ module top
     // --------------------------------------------------
     // Interconnects
     // --------------------------------------------------
+    logic aresetn;          // Combined reset using locked && ~reset
+    logic aclken;
     logic pixel_clk;        // From hdmi_bd_wrapper (clk_wiz)
+    logic clk_locked;
 
     logic [9:0] pixel_x;    // From hdmi_timing to video_gen and axi_stream_wrapper
     logic [9:0] pixel_y;    // From hdmi_timing to video_gen and axi_stream_wrapper
     logic hsync;            // From hdmi_timing to video_gen and axi_stream_wrapper
     logic vsync;            // From hdmi_timing to video_gen and axi_stream_wrapper
-    logic hblank;            // From hdmi_timing to video_gen and axi_stream_wrapper
-    logic vblank;            // From hdmi_timing to video_gen and axi_stream_wrapper
+    logic hblank;           // From hdmi_timing to video_gen and axi_stream_wrapper
+    logic vblank;           // From hdmi_timing to video_gen and axi_stream_wrapper
     logic video_on;         // From hdmi_timing to video_gen and axi_stream_wrapper
 
     logic [11:0] rgb_out;   // From video_gen to axi_stream_wrapper
@@ -51,17 +54,23 @@ module top
     logic        tuser;     // From axi_stream_wrapper to hdmi_bd_wrapper
     logic        tlast;     // From axi_stream_wrapper to hdmi_bd_wrapper
     logic        tready;    // From hdmi_bd_wrapper to axi_stream_wrapper
+    logic        vtg_ce;    // From hdmi_bd_wrapper to axi_stream_wrapper
 
-    // logic locked;        // From clk_wiz (not exposed in wrapper now, but useful for gated reset)
-    // logic aresetn;       // Combined reset using locked && ~reset
+
+    // --------------------------------------------------
+    // Assignments
+    // --------------------------------------------------
+    assign aresetn = ~reset && clk_locked; //areset n goes high when clk is ready and reset is not on (active_low)
+    assign aclken = clk_locked;
+
 
     // --------------------------------------------------
     // HDMI and Video Gen
     // --------------------------------------------------
     hdmi_timing hdmi_timing (
-        .clk_100mhz(clk_100mhz),
         .pixel_clk(pixel_clk),    
-        .reset(reset),
+        .reset(~aresetn),
+        .vtg_ce(vtg_ce),
         .pixel_x(pixel_x),
         .pixel_y(pixel_y),
         .hsync(hsync),
@@ -73,7 +82,7 @@ module top
 
     video_gen video_gen (
         .pixel_clk(pixel_clk),    
-        .reset(reset),
+        .reset(~aresetn),
         .pixel_x(pixel_x),
         .pixel_y(pixel_y),
         .hsync(hsync),
@@ -87,29 +96,35 @@ module top
         .tready(tready)
     );
 
+
     // --------------------------------------------------
     // HDMI Block Design Wrapper
     // --------------------------------------------------
     hdmi_bd_wrapper hdmi_bd_inst (
+        .aresetn_0 (aresetn),                       //Active low reset
+        .aclken_0 (aclken),                         //Active high clk enable
         .clk_100MHz(clk_100mhz),                    // From top-level clock input
+        .locked_0(clk_locked),
         .pixel_clk_0(pixel_clk),                    // Goes to hdmi_timing and video_gen
         .reset_0(reset),
-        .vid_io_out_reset_0(1'b0),
 
-        // AXI-Stream video data in from logic
-        .video_in_0_tdata(tdata),
-        .video_in_0_tvalid(tvalid),
-        .video_in_0_tuser(tuser),
-        .video_in_0_tlast(tlast),
-        .video_in_0_tready(tready),
-
-        // Timing signals from hdmi_timing
+        // Timing signals from hdmi_timing (Outputs)
         .vtiming_in_0_active_video(video_on),
         .vtiming_in_0_field(1'b0),                  // Always progressive video, no interlacing
         .vtiming_in_0_hblank(hblank),
         .vtiming_in_0_hsync(hsync),
         .vtiming_in_0_vblank(vblank),
         .vtiming_in_0_vsync(vsync),
+
+        // AXI-Stream video data in from logic (Inputs)
+        .video_in_0_tdata(tdata),
+        .video_in_0_tvalid(tvalid),
+        .video_in_0_tuser(tuser),
+        .video_in_0_tlast(tlast),
+
+       // AXI-Stream video data in from logic (Outputs)
+        .video_in_0_tready(tready),
+        .vtg_ce_0(vtg_ce),
 
         // Output to HDMI pins
         .vid_io_out_0_active_video(vid_io_out_0_active_video),
@@ -120,6 +135,23 @@ module top
         .vid_io_out_0_vblank(vid_io_out_0_vblank),
         .vid_io_out_0_vsync(vid_io_out_0_vsync)
     );
+
+    /*hdmi_bd_wrapper u_hdmi_bd (
+        .clk_100MHz    (clk_100mhz),
+        .reset_0       (reset),
+        .pixel_clk_0   (pixel_clk),
+        .locked_0      (clk_locked)
+    );*/
+
+
+    // Pack RGB444 into RGB888 by shifting left (you can adjust if using RGB888 internally)
+    //assign vid_io_out_0_data            = {rgb_out[11:8], rgb_out[7:4], rgb_out[3:0], 4'b0000}; // 4-bit to 8-bit expansion
+    //assign vid_io_out_0_active_video    = video_on;
+    //assign vid_io_out_0_hsync           = hsync;
+    //assign vid_io_out_0_vsync           = vsync;
+    //assign vid_io_out_0_hblank          = hblank;
+    //assign vid_io_out_0_vblank          = vblank;
+    //assign vid_io_out_0_field           = 1'b0; // progressive video
 
     // Debug
     assign hsync_tb = hsync;

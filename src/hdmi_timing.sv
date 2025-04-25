@@ -10,9 +10,9 @@ import starsoc_params::*;
 
 module hdmi_timing
 (
-    input  logic          clk_100mhz,
     input  logic          pixel_clk,            //pixel clock 25MHz
     input  logic          reset,
+    input  logic          vtg_ce,
 
     output  logic [9:0]   pixel_x,             // Current pixel pixel_x
     output  logic [9:0]   pixel_y,             // Current pixel pixel_y
@@ -31,14 +31,14 @@ module hdmi_timing
     reg vsync_reg, vsync_next;
 
 
-    // Next value and reset logic running on main clock
-    always@ (posedge clk_100mhz, posedge reset) begin
+    // Next value and reset logic running on main clock (trying pixel_clk for now) 
+    always@ (posedge pixel_clk, posedge reset) begin
         if (reset) begin
             h_count = 0;
             v_count = 0;
             hsync_reg = 1'b0;
             vsync_reg = 1'b0;
-        end else begin
+    end else if (vtg_ce) begin
             h_count <= h_count_next;
             v_count <= v_count_next;
             hsync_reg <= hsync_next;
@@ -51,7 +51,7 @@ module hdmi_timing
         if (reset) begin                                     // If reset is high
             h_count_next = 0;
             v_count_next = 0;
-        end else if (h_count < h_max) begin                  // If h is within bounds
+        end else if (h_count < h_max-1) begin                  // If h is within bounds
             h_count_next = h_count_next + 1;
         end else begin                                       // If h is out of bounds
             if (v_count_next < v_max) begin                  // If h is out of bounds and v is in bounds
@@ -65,16 +65,16 @@ module hdmi_timing
     end 
 
     //assign hsync_next = (h_count >= ((h_max-1) - h_sync_zone)) && h_count < h_max);
-    assign hsync_next = (h_count >= ((h_max) - h_sync_zone) && h_count <= h_max);
-    assign vsync_next = (v_count >= ((v_max) - v_sync_zone) && v_count <= v_max);
-    assign video_on = (h_count >= h_fp && h_count <= (h_max - (h_sync_zone + h_bp)) && (v_count >= v_fp) && (v_count <= (v_max - (v_sync_zone + v_bp))));
+    assign hsync_next = (h_count >= ((h_max - h_bp) - h_sync_zone) && h_count <= h_max - h_bp);
+    assign vsync_next = (v_count >= ((v_max - v_bp) - v_sync_zone) && v_count <= v_max - v_bp);
+    assign video_on = ((h_count >= visible_origin_x) && (h_count < h_visible)) && ((v_count >= visible_origin_y) && (v_count < v_visible));
 
     assign pixel_x = h_count;
     assign pixel_y = v_count;
     assign hsync = hsync_reg;
     assign vsync = vsync_reg;
 
-    assign hblank = (h_count < h_fp || h_count >= (h_fp + h_visible));
-    assign vblank = (v_count < v_fp || v_count >= (v_fp + v_visible));
+    assign hblank = (h_count >= h_visible && h_count < h_max);
+    assign vblank = (v_count >= v_visible && v_count < v_max);
 
 endmodule
