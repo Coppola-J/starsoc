@@ -31,10 +31,15 @@ module video_gen
 // Registers
 reg [11:0] rbg_reg;
 
-reg [23:0] tdata_reg;
-reg tvalid_reg;
-reg tuser_reg;
-reg tlast_reg;
+reg [23:0] tdata_reg = 0;
+reg tvalid_reg = 0;
+reg tuser_reg = 0;
+reg tlast_reg = 0;
+
+// Expand RGB444 (4 bits per channel) to RGB888 (8 bits per channel)
+wire [7:0] r = {rgb_out[11:8], rgb_out[11:8]};
+wire [7:0] g = {rgb_out[7:4],  rgb_out[7:4]};
+wire [7:0] b = {rgb_out[3:0],  rgb_out[3:0]};
 
 
 always@ (posedge pixel_clk, posedge reset)
@@ -58,8 +63,8 @@ always @(posedge pixel_clk, posedge reset) begin
         tuser_reg   = 0;
         tlast_reg   = 0;
     end else if (video_on) begin
+        tvalid_reg = 1;
         if (tready) begin  // Only update when ready to consume
-            tvalid_reg = 1;
             tdata_reg = {r, g, b}; // 24-bit RGB
             tuser_reg = (pixel_x == visible_origin_x && pixel_y == visible_origin_y);    // Start of frame
             tlast_reg = (pixel_x == h_visible-1);        // End of line
@@ -72,12 +77,8 @@ always @(posedge pixel_clk, posedge reset) begin
     end
 end
 
-assign rgb_out = rbg_reg;
 
-// Expand RGB444 (4 bits per channel) to RGB888 (8 bits per channel)
-wire [7:0] r = {rgb_out[11:8], rgb_out[11:8]};
-wire [7:0] g = {rgb_out[7:4],  rgb_out[7:4]};
-wire [7:0] b = {rgb_out[3:0],  rgb_out[3:0]};
+assign rgb_out = rbg_reg;
 
 assign tdata  = tdata_reg;                                     // 24-bit packed RGB
 assign tvalid = tvalid_reg;                                    // Only valid in visible area
