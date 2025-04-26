@@ -11,21 +11,21 @@ import starsoc_params::*;
 
 module video_gen
 (
-    input  logic         pixel_clk,           //pixel clock 25MHz
-    input  logic         reset,
+    input         pixel_clk,           //pixel clock 25MHz
+    input         reset,
 
-    input  logic [9:0]   pixel_x,             // Current pixel pixel_x
-    input  logic [9:0]   pixel_y,             // Current pixel pixel_y
-    input  logic         hsync,               // New line
-    input  logic         vsync,               // New frame
-    input  logic         video_on,            // Indicate when in visible area
-    output logic [11:0]  rgb_out,              // Current pixel color
+    input [9:0]   pixel_x,             // Current pixel pixel_x
+    input [9:0]   pixel_y,             // Current pixel pixel_y
+    input         hsync,               // New line
+    input         vsync,               // New frame
+    input         video_on,            // Indicate when in visible area
+    output [11:0] rgb_out,             // Current pixel color
 
-    output logic [23:0]  tdata,
-    output logic         tvalid,
-    output logic         tuser,
-    output logic         tlast,
-    input  logic         tready               // From AXI4S-to-Video-Out
+    output [23:0]  tdata,
+    output         tvalid,
+    output         tuser,
+    output         tlast,
+    input          tready               // From AXI4S-to-Video-Out
 );
 
 // Registers

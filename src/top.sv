@@ -10,51 +10,51 @@ import starsoc_params::*;
 
 module top 
 (
-    input  logic    clk_100mhz,
-    input  logic    reset,
+    input    clk_100mhz,
+    input    reset,
 
     // HDMI output
-    output logic        vid_io_out_0_active_video,
-    output logic [23:0] vid_io_out_0_data,
-    output logic        vid_io_out_0_field,
-    output logic        vid_io_out_0_hblank,
-    output logic        vid_io_out_0_hsync,
-    output logic        vid_io_out_0_vblank,
-    output logic        vid_io_out_0_vsync,
+    output        vid_io_out_0_active_video,
+    output [23:0] vid_io_out_0_data,
+    output        vid_io_out_0_field,
+    output        vid_io_out_0_hblank,
+    output        vid_io_out_0_hsync,
+    output        vid_io_out_0_vblank,
+    output        vid_io_out_0_vsync,
 
     // Debug
-    output logic hsync_tb,
-    output logic vsync_tb,
-    output logic [11:0] rgb_out_tb,
-    output logic [9:0] pixel_x_tb, pixel_y_tb,              // Using for tb only as of right now
-    output logic video_on_tb,                               // Indicate when in visible area
-    output logic pixel_clk_tb
+    output hsync_tb,
+    output vsync_tb,
+    output [11:0] rgb_out_tb,
+    output [9:0] pixel_x_tb, pixel_y_tb,              // Using for tb only as of right now
+    output video_on_tb,                               // Indicate when in visible area
+    output pixel_clk_tb
 );
 
     // --------------------------------------------------
     // Interconnects
     // --------------------------------------------------
-    logic aresetn;          // Combined reset using locked && ~reset
-    logic aclken;
-    logic pixel_clk;        // From hdmi_bd_wrapper (clk_wiz)
-    logic clk_locked;
+    wire aresetn;          // Combined reset using locked && ~reset
+    wire aclken;
+    wire pixel_clk;        // From hdmi_bd_wrapper (clk_wiz)
+    wire clk_locked;
 
-    logic [9:0] pixel_x;    // From hdmi_timing to video_gen and axi_stream_wrapper
-    logic [9:0] pixel_y;    // From hdmi_timing to video_gen and axi_stream_wrapper
-    logic hsync;            // From hdmi_timing to video_gen and axi_stream_wrapper
-    logic vsync;            // From hdmi_timing to video_gen and axi_stream_wrapper
-    logic hblank;           // From hdmi_timing to video_gen and axi_stream_wrapper
-    logic vblank;           // From hdmi_timing to video_gen and axi_stream_wrapper
-    logic video_on;         // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire [9:0] pixel_x;    // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire [9:0] pixel_y;    // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire hsync;            // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire vsync;            // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire hblank;           // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire vblank;           // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire video_on;         // From hdmi_timing to video_gen and axi_stream_wrapper
 
-    logic [11:0] rgb_out;   // From video_gen to axi_stream_wrapper
+    wire [11:0] rgb_out;   // From video_gen to axi_stream_wrapper
 
-    logic [23:0] tdata;     // From axi_stream_wrapper to hdmi_bd_wrapper
-    logic        tvalid;    // From axi_stream_wrapper to hdmi_bd_wrapper
-    logic        tuser;     // From axi_stream_wrapper to hdmi_bd_wrapper
-    logic        tlast;     // From axi_stream_wrapper to hdmi_bd_wrapper
-    logic        tready;    // From hdmi_bd_wrapper to axi_stream_wrapper
-    logic        vtg_ce;    // From hdmi_bd_wrapper to axi_stream_wrapper
+    wire [23:0] tdata;     // From axi_stream_wrapper to hdmi_bd_wrapper
+    wire        tvalid;    // From axi_stream_wrapper to hdmi_bd_wrapper
+    wire        tuser;     // From axi_stream_wrapper to hdmi_bd_wrapper
+    wire        tlast;     // From axi_stream_wrapper to hdmi_bd_wrapper
+    wire        tready;    // From hdmi_bd_wrapper to axi_stream_wrapper
+    wire        vtg_ce;    // From hdmi_bd_wrapper to axi_stream_wrapper
 
 
     // --------------------------------------------------

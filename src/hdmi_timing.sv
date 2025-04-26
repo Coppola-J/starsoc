@@ -30,9 +30,11 @@ module hdmi_timing
     reg hsync_reg, hsync_next;
     reg vsync_reg, vsync_next;
 
-    wire vtg_clk = 0;
-    assign vtg_clk = pixel_clk && vtg_ce;
+    logic vtg_clk;
 
+    always_comb begin : clk_gen
+        vtg_clk = pixel_clk && vtg_ce;
+    end
 
     // Next value and reset logic running on main clock (trying pixel_clk for now) 
     always@ (posedge vtg_clk, posedge reset) begin
@@ -51,23 +53,24 @@ module hdmi_timing
 
     // Count Logic
     always@ (posedge vtg_clk, posedge reset) begin
-        if (reset) begin                                     // If reset is high
+        if (reset) begin
             h_count_next = 0;
             v_count_next = 0;
         end else begin
-            if (h_count < h_max-1) begin // If h is within bounds
-                h_count_next = h_count_next + 1;
-            end else begin                                       // If h is out of bounds
-                if (v_count_next < v_max) begin                  // If h is out of bounds and v is in bounds
-                    h_count_next = 0;
-                    v_count_next = v_count_next + 1;
-                end else begin                                   // if h and v are out of bounds
-                    h_count_next = 0;
+            if (h_count < h_max) begin
+                h_count_next = h_count + 1;
+                v_count_next = v_count;
+            end else begin
+                h_count_next = 0;
+                if (v_count < v_max) begin
+                    v_count_next = v_count + 1;
+                end else begin
                     v_count_next = 0;
                 end
             end
         end
-    end 
+    end
+
 
     //assign hsync_next = (h_count >= ((h_max-1) - h_sync_zone)) && h_count < h_max);
     assign hsync_next = (h_count >= ((h_max - h_bp) - h_sync_zone) && h_count <= h_max - h_bp);
@@ -79,7 +82,7 @@ module hdmi_timing
     assign hsync = hsync_reg;
     assign vsync = vsync_reg;
 
-    assign hblank = (h_count >= h_visible && h_count < h_max);
-    assign vblank = (v_count >= v_visible && v_count < v_max);
+    assign hblank = (h_count >= h_visible && h_count <= h_max);
+    assign vblank = (v_count >= v_visible && v_count <= v_max);
 
 endmodule
