@@ -11,14 +11,17 @@ import starsoc_params::*;
 
 module video_gen
 (
-    input         pixel_clk,           //pixel clock 25MHz
+    input         pixel_clk,           // Pixel clock 25MHz
     input         reset,
 
     input [9:0]   pixel_x,             // Current pixel pixel_x
     input [9:0]   pixel_y,             // Current pixel pixel_y
+    input  [9:0]  next_pixel_x,        // Next pixel pixel_x (for video_gen)
+    input  [9:0]  next_pixel_y,        // Next pixel pixel_y (for video_gen)
     input         hsync,               // New line
     input         vsync,               // New frame
     input         video_on,            // Indicate when in visible area
+    input         next_video_on,       // Indicate when in visible area
     output [11:0] rgb_out,             // Current pixel color
 
     output [23:0]  tdata,
@@ -29,12 +32,13 @@ module video_gen
 );
 
 // Registers
-reg [11:0] rbg_reg;
+logic [11:0] rgb_reg;
 
-reg [23:0] tdata_reg = 0;
-reg tvalid_reg = 0;
-reg tuser_reg = 0;
-reg tlast_reg = 0;
+logic [23:0] tdata_reg;
+logic        tvalid_reg;
+logic        tuser_reg;
+logic        tlast_reg;
+
 
 // Expand RGB444 (4 bits per channel) to RGB888 (8 bits per channel)
 wire [7:0] r = {rgb_out[11:8], rgb_out[11:8]};
@@ -42,43 +46,45 @@ wire [7:0] g = {rgb_out[7:4],  rgb_out[7:4]};
 wire [7:0] b = {rgb_out[3:0],  rgb_out[3:0]};
 
 
-always@ (posedge pixel_clk, posedge reset)
-    begin
+always_ff @(posedge pixel_clk, posedge reset) begin
         if(reset) begin
-            rbg_reg = COLOR_RED;
+            rgb_reg = COLOR_RED;
         end else begin
             if (((pixel_x >= player_x - 10) && (pixel_x < player_x + 10)) && 
             ((pixel_y >= player_y - 20) && (pixel_y < player_y + 20))) begin
-                rbg_reg = COLOR_CYAN;
+                rgb_reg = COLOR_CYAN;
+            end else if (pixel_x == 330) begin
+                rgb_reg = COLOR_RED;
             end else begin
-                rbg_reg = COLOR_RED;
+                rgb_reg = COLOR_BLUE;
             end
         end 
     end 
 
-always @(posedge pixel_clk, posedge reset) begin
+always_ff @(posedge pixel_clk, posedge reset) begin
     if (reset) begin
-        tvalid_reg  = 0;
-        tdata_reg   = 0;
-        tuser_reg   = 0;
-        tlast_reg   = 0;
-    end else if (video_on) begin
-        tvalid_reg = 1;
-        if (tready) begin  // Only update when ready to consume
-            tdata_reg = {r, g, b}; // 24-bit RGB
-            tuser_reg = (pixel_x == visible_origin_x && pixel_y == visible_origin_y);    // Start of frame
-            tlast_reg = (pixel_x == h_visible-1);        // End of line
-        end
-    end else begin
         tvalid_reg = 0;
-        tuser_reg = 0;
-        tdata_reg = 0;
-        tlast_reg = 0;       
+        tdata_reg  = 0;
+        tuser_reg  = 0;
+        tlast_reg  = 0;
+    end else begin
+        if (tready || 1'b1) begin
+            tdata_reg = {r, g, b}; // RGB data
+            tuser_reg = (next_pixel_x-1 == visible_origin_x && next_pixel_y == visible_origin_y); // Start of Frame
+            tlast_reg = (next_pixel_x == h_visible-1); // End of Line
+            tvalid_reg = next_video_on;
+        end else begin
+            tvalid_reg = 0;
+            tuser_reg = 0;
+            tdata_reg = 0;
+            tlast_reg = 0;
+        end
     end
 end
 
 
-assign rgb_out = rbg_reg;
+
+assign rgb_out = rgb_reg;
 
 assign tdata  = tdata_reg;                                     // 24-bit packed RGB
 assign tvalid = tvalid_reg;                                    // Only valid in visible area

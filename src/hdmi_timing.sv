@@ -10,17 +10,20 @@ import starsoc_params::*;
 
 module hdmi_timing
 (
-    input           pixel_clk,            //pixel clock 25MHz
+    input           pixel_clk,           // Pixel clock 25MHz
     input           reset,
     input           vtg_ce,
 
     output  [9:0]   pixel_x,             // Current pixel pixel_x
     output  [9:0]   pixel_y,             // Current pixel pixel_y
+    output  [9:0]   next_pixel_x,        // Next pixel pixel_x (for video_gen)
+    output  [9:0]   next_pixel_y,        // Next pixel pixel_y (for video_gen)
     output          hsync,               // New line
     output          vsync,               // New frame
     output          hblank,              // Blank line
     output          vblank,              // Blank frame
-    output          video_on             // Indicate when in visible area
+    output          video_on,            // Indicate when in visible area
+    output          next_video_on        // Indicate when in visible area
 );
 
     // Registers (two each to account for buffering)
@@ -77,6 +80,9 @@ module hdmi_timing
     assign vsync_next = (v_count >= ((v_max - v_bp) - v_sync_zone) && v_count <= v_max - v_bp);
     assign video_on = ((h_count >= visible_origin_x) && (h_count < h_visible)) && ((v_count >= visible_origin_y) && (v_count < v_visible));
 
+    assign next_pixel_x = h_count_next;
+    assign next_pixel_y = v_count_next;
+    assign next_video_on = ((h_count_next >= visible_origin_x) && (h_count_next < h_visible)) && ((v_count_next >= visible_origin_y) && (v_count_next < v_visible));
     assign pixel_x = h_count;
     assign pixel_y = v_count;
     assign hsync = hsync_reg;

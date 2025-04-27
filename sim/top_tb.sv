@@ -60,7 +60,7 @@ initial begin
     reset_tb = 0;
 
     // Simulate a few thousand cycles (~1 frame at 640x480 @ 60Hz)
-    repeat (50000) begin
+    repeat (1000000) begin
         @(posedge pixel_clk_tb); // Wait for clock edge
         $display("%4t | %3d %3d   %b         %b       %b", 
                  $time, x_tb, y_tb, hsync_tb, vsync_tb, rgb_tb);
@@ -139,8 +139,8 @@ always @(posedge pixel_clk_tb) begin
 
     // Check that tlast (end of line) only asserts at the last pixel of a row (x == 639)
     if (x_tb == h_visible-1) begin
-        assert (tlast_tb == 0) else begin
-            $fatal(1, "tlast asserted at x=%0d instead of 639 at %0t", x_tb, $time);
+        assert (tlast_tb == 1) else begin
+            $error(1, "tlast asserted at x=%0d instead of 639 at %0t", x_tb, $time);
             error_count++;
         end
     end

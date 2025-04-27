@@ -41,11 +41,14 @@ module top
 
     wire [9:0] pixel_x;    // From hdmi_timing to video_gen and axi_stream_wrapper
     wire [9:0] pixel_y;    // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire [9:0] next_pixel_x;    // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire [9:0] next_pixel_y;    // From hdmi_timing to video_gen and axi_stream_wrapper
     wire hsync;            // From hdmi_timing to video_gen and axi_stream_wrapper
     wire vsync;            // From hdmi_timing to video_gen and axi_stream_wrapper
     wire hblank;           // From hdmi_timing to video_gen and axi_stream_wrapper
     wire vblank;           // From hdmi_timing to video_gen and axi_stream_wrapper
     wire video_on;         // From hdmi_timing to video_gen and axi_stream_wrapper
+    wire next_video_on;         // From hdmi_timing to video_gen and axi_stream_wrapper
 
     wire [11:0] rgb_out;   // From video_gen to axi_stream_wrapper
 
@@ -73,11 +76,14 @@ module top
         .vtg_ce(vtg_ce),
         .pixel_x(pixel_x),
         .pixel_y(pixel_y),
+        .next_pixel_x(next_pixel_x),
+        .next_pixel_y(next_pixel_y),
         .hsync(hsync),
         .vsync(vsync),
         .hblank(hblank),
         .vblank(vblank),
-        .video_on(video_on)
+        .video_on(video_on),
+        .next_video_on(next_video_on)
     );
 
     video_gen video_gen (
@@ -85,9 +91,12 @@ module top
         .reset(~aresetn),
         .pixel_x(pixel_x),
         .pixel_y(pixel_y),
+        .next_pixel_x(next_pixel_x),
+        .next_pixel_y(next_pixel_y),
         .hsync(hsync),
         .vsync(vsync),
         .video_on(video_on),
+        .next_video_on(next_video_on),
         .rgb_out(rgb_out),
         .tdata(tdata),
         .tvalid(tvalid),
