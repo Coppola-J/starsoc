@@ -34,11 +34,6 @@ module video_gen
 // Registers
 logic [11:0] rgb_reg;
 
-logic [23:0] tdata_reg;
-logic        tvalid_reg;
-logic        tuser_reg;
-logic        tlast_reg;
-
 
 // Expand RGB444 (4 bits per channel) to RGB888 (8 bits per channel)
 wire [7:0] r = {rgb_out[11:8], rgb_out[11:8]};
@@ -61,34 +56,12 @@ always_ff @(posedge pixel_clk, posedge reset) begin
         end 
     end 
 
-always_ff @(posedge pixel_clk, posedge reset) begin
-    if (reset) begin
-        tvalid_reg = 0;
-        tdata_reg  = 0;
-        tuser_reg  = 0;
-        tlast_reg  = 0;
-    end else begin
-        if (tready || 1'b1) begin
-            tdata_reg = {r, g, b}; // RGB data
-            tuser_reg = (next_pixel_x-1 == visible_origin_x && next_pixel_y == visible_origin_y); // Start of Frame
-            tlast_reg = (next_pixel_x == h_visible-1); // End of Line
-            tvalid_reg = next_video_on;
-        end else begin
-            tvalid_reg = 0;
-            tuser_reg = 0;
-            tdata_reg = 0;
-            tlast_reg = 0;
-        end
-    end
-end
-
-
 
 assign rgb_out = rgb_reg;
 
-assign tdata  = tdata_reg;                                     // 24-bit packed RGB
-assign tvalid = tvalid_reg;                                    // Only valid in visible area
-assign tuser  = tuser_reg;                                     // First visible pixel of first line
-assign tlast  = tlast_reg;                                     // Last visible pixel in a row
+assign tdata  = {r, g, b} && (reset == 0);                                                                  // 24-bit packed RGB
+assign tvalid = tready;//video_on && (reset == 0);                                                              // Only valid in visible area
+assign tuser  = (pixel_x == visible_origin_x && pixel_y == visible_origin_y) && (reset == 0); //;     // First visible pixel of first line
+assign tlast  = (pixel_x == h_visible-1) && (reset == 0);                                              // Last visible pixel in a row
 
 endmodule

@@ -71,7 +71,7 @@ module top
     // HDMI and Video Gen
     // --------------------------------------------------
     hdmi_timing hdmi_timing (
-        .pixel_clk(pixel_clk),    
+        .pixel_clk(clk_100mhz),    
         .reset(~aresetn),
         .vtg_ce(vtg_ce),
         .pixel_x(pixel_x),

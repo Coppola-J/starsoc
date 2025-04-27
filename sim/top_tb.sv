@@ -60,7 +60,7 @@ initial begin
     reset_tb = 0;
 
     // Simulate a few thousand cycles (~1 frame at 640x480 @ 60Hz)
-    repeat (1000000) begin
+    repeat (100000000) begin
         @(posedge pixel_clk_tb); // Wait for clock edge
         $display("%4t | %3d %3d   %b         %b       %b", 
                  $time, x_tb, y_tb, hsync_tb, vsync_tb, rgb_tb);
